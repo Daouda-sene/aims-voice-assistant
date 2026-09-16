@@ -9,9 +9,9 @@ from gtts import gTTS
 from src.pipeline import ask_question
 
 
-# =====================================
-# CONFIG
-# =====================================
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 st.set_page_config(
     page_title="AIMS Senegal Voice Agent",
@@ -20,9 +20,9 @@ st.set_page_config(
 )
 
 
-# =====================================
+# ============================================================
 # SESSION STATE
-# =====================================
+# ============================================================
 
 if "docs" not in st.session_state:
     st.session_state["docs"] = []
@@ -37,9 +37,9 @@ if "transcription" not in st.session_state:
     st.session_state["transcription"] = ""
 
 
-# =====================================
+# ============================================================
 # LOAD WHISPER
-# =====================================
+# ============================================================
 
 @st.cache_resource
 def load_whisper():
@@ -53,9 +53,9 @@ def load_whisper():
     return model
 
 
-# =====================================
+# ============================================================
 # STYLE
-# =====================================
+# ============================================================
 
 st.markdown(
     """
@@ -78,9 +78,9 @@ st.markdown(
 )
 
 
-# =====================================
+# ============================================================
 # SIDEBAR
-# =====================================
+# ============================================================
 
 if os.path.exists("assets/aims_logo.png"):
 
@@ -98,7 +98,7 @@ st.sidebar.markdown(
     - 🎤 Faster Whisper
     - 📚 ChromaDB
     - 🔎 MiniLM
-    - 🤖 Phi-3
+    - 🤖 Groq / Llama
     - 🔊 gTTS
 
     ### Project
@@ -110,9 +110,9 @@ st.sidebar.markdown(
 )
 
 
-# =====================================
+# ============================================================
 # HEADER
-# =====================================
+# ============================================================
 
 col1, col2 = st.columns([1, 5])
 
@@ -133,7 +133,7 @@ with col2:
     )
 
     st.markdown(
-        '<p class="subtitle">Whisper + RAG + Phi-3 + TTS</p>',
+        '<p class="subtitle">Whisper + RAG + LLM + TTS</p>',
         unsafe_allow_html=True
     )
 
@@ -141,24 +141,24 @@ with col2:
 st.divider()
 
 
-# =====================================
+# ============================================================
 # KPI
-# =====================================
+# ============================================================
 
 c1, c2, c3, c4 = st.columns(4)
 
 c1.metric("PDFs", "9")
 c2.metric("Pages", "320")
 c3.metric("Chunks", "496")
-c4.metric("LLM", "Phi-3")
+c4.metric("LLM", "Groq")
 
 
 st.divider()
 
 
-# =====================================
+# ============================================================
 # TABS
-# =====================================
+# ============================================================
 
 tab1, tab2, tab3, tab4 = st.tabs(
     [
@@ -171,7 +171,7 @@ tab1, tab2, tab3, tab4 = st.tabs(
 
 
 # ============================================================
-# TAB 1 : VOICE INPUT
+# TAB 1 — INPUT
 # ============================================================
 
 with tab1:
@@ -217,27 +217,25 @@ with tab1:
 
                     try:
 
-                        result = ask_question(
+                        # ------------------------------------
+                        # RAG
+                        # ------------------------------------
+
+                        answer, docs = ask_question(
                             question
                         )
 
-                        # ask_question should return
-                        # (answer, docs)
-
-                        if isinstance(result, tuple):
-
-                            answer, docs = result
-
-                        else:
-
-                            answer = result
-                            docs = []
+                        # ------------------------------------
+                        # SAVE RESULTS
+                        # ------------------------------------
 
                         st.session_state["answer"] = answer
                         st.session_state["docs"] = docs
                         st.session_state["transcription"] = question
 
-                        # History
+                        # ------------------------------------
+                        # HISTORY
+                        # ------------------------------------
 
                         st.session_state["history"].append(
                             {
@@ -245,6 +243,10 @@ with tab1:
                                 "a": answer
                             }
                         )
+
+                        # ------------------------------------
+                        # SUCCESS
+                        # ------------------------------------
 
                         st.success(
                             "RAG completed ✔️"
@@ -257,6 +259,38 @@ with tab1:
                         )
 
 
+        # ----------------------------------------------------
+        # DISPLAY TEXT RESULT
+        # ----------------------------------------------------
+
+        if (
+            st.session_state.get("answer")
+            and not send
+        ):
+
+            st.subheader(
+                "🤖 AI Response"
+            )
+
+            st.write(
+                st.session_state["answer"]
+            )
+
+
+        elif (
+            send
+            and st.session_state.get("answer")
+        ):
+
+            st.subheader(
+                "🤖 AI Response"
+            )
+
+            st.write(
+                st.session_state["answer"]
+            )
+
+
     # ========================================================
     # VOICE MODE
     # ========================================================
@@ -264,19 +298,19 @@ with tab1:
     else:
 
         st.write(
-            "Click the microphone below and ask your question."
+            "Click the microphone and ask your question."
         )
 
-        # Streamlit native audio recorder
         audio = st.audio_input(
             "🎤 Record your question"
         )
 
+
         if audio is not None:
 
-            # ------------------------------------------------
-            # SAVE TEMPORARY AUDIO
-            # ------------------------------------------------
+            # =================================================
+            # SAVE AUDIO
+            # =================================================
 
             temp_audio = tempfile.NamedTemporaryFile(
                 delete=False,
@@ -291,6 +325,7 @@ with tab1:
 
             audio_path = temp_audio.name
 
+
             st.audio(
                 audio.getvalue(),
                 format="audio/wav"
@@ -301,9 +336,9 @@ with tab1:
             )
 
 
-            # ------------------------------------------------
+            # =================================================
             # WHISPER
-            # ------------------------------------------------
+            # =================================================
 
             with st.spinner(
                 "Loading Whisper..."
@@ -322,9 +357,9 @@ with tab1:
                     st.stop()
 
 
-            # ------------------------------------------------
+            # =================================================
             # TRANSCRIPTION
-            # ------------------------------------------------
+            # =================================================
 
             with st.spinner(
                 "Transcribing audio..."
@@ -352,9 +387,9 @@ with tab1:
                     transcription = ""
 
 
-            # ------------------------------------------------
-            # DISPLAY TRANSCRIPTION
-            # ------------------------------------------------
+            # =================================================
+            # SHOW TRANSCRIPTION
+            # =================================================
 
             if transcription:
 
@@ -378,9 +413,9 @@ with tab1:
                 )
 
 
-                # ------------------------------------------------
+                # =============================================
                 # RAG
-                # ------------------------------------------------
+                # =============================================
 
                 with st.spinner(
                     "Searching knowledge base..."
@@ -388,29 +423,21 @@ with tab1:
 
                     try:
 
-                        result = ask_question(
+                        answer, docs = ask_question(
                             transcription
                         )
 
-                        if isinstance(result, tuple):
-
-                            answer, docs = result
-
-                        else:
-
-                            answer = result
-                            docs = []
-
-
-                        # Save results
+                        # -------------------------------------
+                        # SAVE RESULTS
+                        # -------------------------------------
 
                         st.session_state["answer"] = answer
                         st.session_state["docs"] = docs
 
 
-                        # ------------------------------------------------
+                        # -------------------------------------
                         # HISTORY
-                        # ------------------------------------------------
+                        # -------------------------------------
 
                         st.session_state["history"].append(
                             {
@@ -425,12 +452,12 @@ with tab1:
                         )
 
 
-                        # ------------------------------------------------
-                        # SHOW ANSWER
-                        # ------------------------------------------------
+                        # -------------------------------------
+                        # DISPLAY ANSWER
+                        # -------------------------------------
 
                         st.subheader(
-                            "🤖 Response"
+                            "🤖 AI Response"
                         )
 
                         st.write(
@@ -444,6 +471,7 @@ with tab1:
                             f"RAG error: {e}"
                         )
 
+
             else:
 
                 st.error(
@@ -451,9 +479,9 @@ with tab1:
                 )
 
 
-            # ------------------------------------------------
-            # DELETE TEMP FILE
-            # ------------------------------------------------
+            # =================================================
+            # DELETE TEMP AUDIO
+            # =================================================
 
             try:
 
@@ -467,7 +495,7 @@ with tab1:
 
 
 # ============================================================
-# TAB 2 : RAG CONTEXT
+# TAB 2 — RAG CONTEXT
 # ============================================================
 
 with tab2:
@@ -481,6 +509,7 @@ with tab2:
         []
     )
 
+
     if docs:
 
         for i, doc in enumerate(docs):
@@ -488,8 +517,6 @@ with tab2:
             st.markdown(
                 f"### 📄 Document {i + 1}"
             )
-
-            # LangChain Document
 
             if hasattr(
                 doc,
@@ -507,22 +534,21 @@ with tab2:
                 content[:1500]
             )
 
-            # Metadata
 
             if hasattr(
                 doc,
                 "metadata"
             ):
 
-                metadata = doc.metadata
-
-                if metadata:
+                if doc.metadata:
 
                     st.caption(
-                        f"Metadata: {metadata}"
+                        f"Metadata: {doc.metadata}"
                     )
 
+
             st.divider()
+
 
     else:
 
@@ -533,7 +559,7 @@ with tab2:
 
 
 # ============================================================
-# TAB 3 : AI RESPONSE
+# TAB 3 — AI RESPONSE
 # ============================================================
 
 with tab3:
@@ -603,7 +629,7 @@ with tab3:
             )
 
 
-            # Optional autoplay
+            # Autoplay
 
             b64 = base64.b64encode(
                 audio_bytes
@@ -652,7 +678,7 @@ with tab3:
 
 
     # ========================================================
-    # CONVERSATION HISTORY
+    # HISTORY
     # ========================================================
 
     st.divider()
@@ -678,6 +704,7 @@ with tab3:
                 len(history) - i
             )
 
+
             with st.expander(
                 f"Conversation {conversation_number}"
             ):
@@ -690,6 +717,7 @@ with tab3:
                     item["q"]
                 )
 
+
                 st.markdown(
                     "**🤖 Answer**"
                 )
@@ -697,6 +725,7 @@ with tab3:
                 st.write(
                     item["a"]
                 )
+
 
     else:
 
@@ -706,7 +735,7 @@ with tab3:
 
 
 # ============================================================
-# TAB 4 : EVALUATION
+# TAB 4 — EVALUATION
 # ============================================================
 
 with tab4:
@@ -718,15 +747,18 @@ with tab4:
 
     c1, c2, c3 = st.columns(3)
 
+
     c1.metric(
         "Indexed PDFs",
         9
     )
 
+
     c2.metric(
         "Indexed Pages",
         320
     )
+
 
     c3.metric(
         "Chunks",
@@ -741,23 +773,27 @@ with tab4:
 
     st.code(
         """
-Audio
-  ↓
+🎤 Audio
+   ↓
 Streamlit Audio Input
-  ↓
+   ↓
 Faster Whisper
-  ↓
+   ↓
 Transcription
-  ↓
+   ↓
+MiniLM Embeddings
+   ↓
 ChromaDB
-  ↓
+   ↓
 Retriever
-  ↓
-Phi-3
-  ↓
+   ↓
+Groq LLM
+   ↓
+Answer
+   ↓
 gTTS
-  ↓
-Audio Response
+   ↓
+🔊 Audio Response
         """
     )
 
