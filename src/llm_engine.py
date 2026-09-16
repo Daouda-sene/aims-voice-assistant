@@ -2,21 +2,16 @@ import os
 from groq import Groq
 
 
-api_key = os.environ.get("GROQ_API_KEY")
-
-if not api_key:
-    raise RuntimeError(
-        "GROQ_API_KEY is not configured. "
-        "Please add it in Streamlit Cloud → Settings → Secrets."
-    )
-
-
-client = Groq(
-    api_key=api_key
-)
-
-
 def generate_answer(question, context):
+
+    api_key = os.environ.get("GROQ_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY is not configured in Streamlit Secrets."
+        )
+
+    client = Groq(api_key=api_key)
 
     prompt = f"""
 You are an AI assistant for AIMS Senegal.
