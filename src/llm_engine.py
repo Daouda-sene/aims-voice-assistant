@@ -2,8 +2,17 @@ import os
 from groq import Groq
 
 
+api_key = os.environ.get("GROQ_API_KEY")
+
+if not api_key:
+    raise RuntimeError(
+        "GROQ_API_KEY is not configured. "
+        "Please add it in Streamlit Cloud → Settings → Secrets."
+    )
+
+
 client = Groq(
-    api_key=os.environ.get("GROQ_API_KEY")
+    api_key=api_key
 )
 
 
