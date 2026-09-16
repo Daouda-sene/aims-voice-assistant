@@ -3,9 +3,8 @@ faster-whisper
 langchain
 langchain-chroma
 langchain-huggingface
-langchain-ollama
 chromadb
 sentence-transformers
 gtts
-groq
 torch
+groq
