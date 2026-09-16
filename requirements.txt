@@ -7,4 +7,5 @@ langchain-ollama
 chromadb
 sentence-transformers
 gtts
+groq
 torch
