@@ -1,4 +1,11 @@
-from ollama import chat
+import os
+from groq import Groq
+
+
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY")
+)
+
 
 def generate_answer(question, context):
 
@@ -6,6 +13,9 @@ def generate_answer(question, context):
 You are an AI assistant for AIMS Senegal.
 
 Answer ONLY using the context below.
+
+If the answer is not contained in the context,
+say that you do not have enough information.
 
 CONTEXT:
 {context}
@@ -16,14 +26,15 @@ QUESTION:
 ANSWER:
 """
 
-    response = chat(
-        model="phi3",
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        temperature=0
     )
 
-    return response["message"]["content"]
+    return response.choices[0].message.content
